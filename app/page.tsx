@@ -495,7 +495,7 @@ export default function Home() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Personal No</label>
+                  <label className="text-sm font-medium">Persna No</label>
                   <Input
                     value={formData.persnaNo}
                     onChange={(e) => setFormData({...formData, persnaNo: e.target.value})}

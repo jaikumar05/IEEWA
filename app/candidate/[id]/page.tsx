@@ -97,7 +97,7 @@ export default function CandidateDetailPage() {
             <DetailItem label="Email" value={candidate.emailId} />
             <DetailItem label="Employer" value={candidate.employer} />
             <DetailItem label="Designation" value={candidate.designation} />
-            <DetailItem label="Personal No" value={candidate.persnaNo} />
+            <DetailItem label="Persna No" value={candidate.persnaNo} />
             <DetailItem label="PF No" value={candidate.pfNo} />
             <DetailItem label="PPO No" value={candidate.ppoNo} />
             <DetailItem label="Date of Retirement" value={candidate.dor} />
