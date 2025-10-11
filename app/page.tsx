@@ -168,6 +168,17 @@ export default function Home() {
     }
   };
 
+  const handleDeleteAll = () => {
+    if (window.confirm("⚠️ Are you sure you want to delete ALL candidates? This action cannot be undone!")) {
+      if (window.confirm("⚠️ Final confirmation: Delete ALL " + candidates.length + " candidates?")) {
+        setCandidates([]);
+        setFilteredCandidates([]);
+        localStorage.removeItem("candidview_candidates");
+        alert("All candidates have been deleted.");
+      }
+    }
+  };
+
   const handleDownload = () => {
     const worksheet = XLSX.utils.json_to_sheet(candidates);
     const workbook = XLSX.utils.book_new();
@@ -210,7 +221,7 @@ export default function Home() {
             fatherHusbandName: cleanRow["Father/Husband Name"] || cleanRow.fatherHusbandName || "",
             age: cleanRow.Age || cleanRow.age || "",
             address: cleanRow.Address || cleanRow.address || "",
-            persnaNo: cleanRow["Personal No"] || cleanRow.persnaNo || "",
+            persnaNo: cleanRow["Persna No"] || cleanRow.persnaNo || "",
             pfNo: cleanRow["PF No"] || cleanRow.pfNo || "",
             ppoNo: cleanRow["PPO No"] || cleanRow.ppoNo || "",
             dor: cleanRow["Date of Retirement"] || cleanRow.dor || "",
@@ -327,6 +338,15 @@ export default function Home() {
             <Button variant="outline" onClick={handleDownload}>
               <Download className="h-4 w-4 mr-2" />
               Download
+            </Button>
+
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteAll}
+              disabled={candidates.length === 0}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete All
             </Button>
           </div>
         </div>
