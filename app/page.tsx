@@ -179,11 +179,35 @@ export default function Home() {
     }
   };
 
-  const handleDownload = () => {
-    const worksheet = XLSX.utils.json_to_sheet(candidates);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Candidates");
-    XLSX.writeFile(workbook, "candidates_export.xlsx");
+    const handleDownload = () => {
+    try {
+      const worksheet = XLSX.utils.json_to_sheet(candidates);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Candidates");
+      
+      // Generate the Excel file as a blob
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `candidates_export_${new Date().getTime()}.xlsx`;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      alert("File downloaded successfully!");
+    } catch (error) {
+      console.error("Download error:", error);
+      alert("Error downloading file. Please try again.");
+    }
   };
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
