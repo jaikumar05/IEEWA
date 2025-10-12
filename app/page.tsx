@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Download, Upload, Search, Mail, Phone, Building, MapPin, Edit, Trash2, Share2 } from "lucide-react";
+import { Plus, Download, Upload, Search, Mail, Phone, Building, MapPin, Edit, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as XLSX from "xlsx";
 
@@ -181,6 +181,7 @@ export default function Home() {
 
   const handleDownload = () => {
     try {
+      // Try direct download first
       const worksheet = XLSX.utils.json_to_sheet(candidates);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Candidates");
@@ -199,40 +200,32 @@ export default function Home() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       
-      alert("File downloaded successfully!");
-    } catch (error) {
-      console.error("Download error:", error);
-      alert("Error downloading file. Please try the Share button instead.");
-    }
-  };
-
-  const handleShare = async () => {
-    try {
-      const worksheet = XLSX.utils.json_to_sheet(candidates);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Candidates");
+      // Check if we're in a standalone PWA/Appilix environment
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                          (window.navigator as any).standalone;
       
-      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const file = new File([blob], `candidates_${new Date().getTime()}.xlsx`, {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      });
-      
-      if (navigator.share && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: 'Candidates Export',
-          text: 'Exported candidates data'
-        });
+      if (isStandalone) {
+        // In PWA - open in browser for download
+        setTimeout(() => {
+          const currentUrl = window.location.origin + window.location.pathname;
+          window.open(currentUrl, '_blank');
+          alert("📱 App opened in browser!\n\nNow click the Download button again in the browser to save the file.");
+        }, 500);
       } else {
-        handleDownload();
+        // Normal browser - download worked
+        alert("✅ File downloaded successfully!");
       }
     } catch (error) {
-      if ((error as Error).name === 'AbortError') {
-        return;
+      // Fallback - open in browser
+      console.error("Download error:", error);
+      const currentUrl = window.location.origin + window.location.pathname;
+      const opened = window.open(currentUrl, '_blank');
+      
+      if (opened) {
+        alert("📱 App opened in browser!\n\nClick the Download button again there to save the file.");
+      } else {
+        alert("📱 To download:\n\n1. Open Chrome browser\n2. Go to: " + currentUrl + "\n3. Click Download button");
       }
-      console.error("Share error:", error);
-      handleDownload();
     }
   };
 
@@ -388,11 +381,6 @@ export default function Home() {
             <Button variant="outline" onClick={handleDownload}>
               <Download className="h-4 w-4 mr-2" />
               Download
-            </Button>
-
-            <Button variant="outline" onClick={handleShare}>
-              <Share2 className="h-4 w-4 mr-2" />
-              Share
             </Button>
 
             <Button 
