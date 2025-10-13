@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Share2, Upload, Search, Mail, Phone, Building, MapPin, Edit, Trash2 } from "lucide-react";
+import { Plus, Download, Upload, Search, Mail, Phone, Building, MapPin, Edit, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as XLSX from "xlsx";
 
@@ -179,38 +179,28 @@ export default function Home() {
     }
   };
 
-  // Only one share function
-  const handleShare = async () => {
+  const handleDownload = () => {
     try {
       const worksheet = XLSX.utils.json_to_sheet(candidates);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Candidates");
-
+      
       const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-      const blob = new Blob([excelBuffer], {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      });
-
-      const file = new File([blob], `candidates_${new Date().getTime()}.xlsx`, {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      });
-
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: 'Candidates Export',
-          text: 'Exported candidates data'
-        });
-      } else {
-        alert(
-          "Native sharing is not supported on this device/browser!\n\nYou can:\n" +
-          "1. Open the app in Chrome browser\n" +
-          "2. Use the Share or Download features there."
-        );
-      }
+      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `candidates_export_${new Date().getTime()}.xlsx`;
+      
+      document.body.appendChild(link);
+      link.click();
+      
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (error) {
-      alert("Could not share the file. Try opening the app in Chrome browser.");
-      console.error("Share error:", error);
+      console.error("Download error:", error);
+      alert("Download failed. Please try again or use a browser like Chrome.");
     }
   };
 
@@ -363,9 +353,9 @@ export default function Home() {
               />
             </label>
             
-            <Button variant="outline" onClick={handleShare}>
-              <Share2 className="h-4 w-4 mr-2" />
-              Share
+            <Button variant="outline" onClick={handleDownload}>
+              <Download className="h-4 w-4 mr-2" />
+              Download
             </Button>
 
             <Button 
