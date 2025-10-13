@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Download, Upload, Search, Mail, Phone, Building, MapPin, Edit, Trash2 } from "lucide-react";
+import { Plus, Share2, Upload, Search, Mail, Phone, Building, MapPin, Edit, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as XLSX from "xlsx";
 
@@ -179,53 +179,38 @@ export default function Home() {
     }
   };
 
-  const handleDownload = () => {
+  // Only one share function
+  const handleShare = async () => {
     try {
-      // Try direct download first
       const worksheet = XLSX.utils.json_to_sheet(candidates);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Candidates");
-      
+
       const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `candidates_export_${new Date().getTime()}.xlsx`;
-      
-      document.body.appendChild(link);
-      link.click();
-      
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      
-      // Check if we're in a standalone PWA/Appilix environment
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                          (window.navigator as any).standalone;
-      
-      if (isStandalone) {
-        // In PWA - open in browser for download
-        setTimeout(() => {
-          const currentUrl = window.location.origin + window.location.pathname;
-          window.open(currentUrl, '_blank');
-          alert("📱 App opened in browser!\n\nNow click the Download button again in the browser to save the file.");
-        }, 500);
+      const blob = new Blob([excelBuffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+
+      const file = new File([blob], `candidates_${new Date().getTime()}.xlsx`, {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: 'Candidates Export',
+          text: 'Exported candidates data'
+        });
       } else {
-        // Normal browser - download worked
-        alert("✅ File downloaded successfully!");
+        alert(
+          "Native sharing is not supported on this device/browser!\n\nYou can:\n" +
+          "1. Open the app in Chrome browser\n" +
+          "2. Use the Share or Download features there."
+        );
       }
     } catch (error) {
-      // Fallback - open in browser
-      console.error("Download error:", error);
-      const currentUrl = window.location.origin + window.location.pathname;
-      const opened = window.open(currentUrl, '_blank');
-      
-      if (opened) {
-        alert("📱 App opened in browser!\n\nClick the Download button again there to save the file.");
-      } else {
-        alert("📱 To download:\n\n1. Open Chrome browser\n2. Go to: " + currentUrl + "\n3. Click Download button");
-      }
+      alert("Could not share the file. Try opening the app in Chrome browser.");
+      console.error("Share error:", error);
     }
   };
 
@@ -378,9 +363,9 @@ export default function Home() {
               />
             </label>
             
-            <Button variant="outline" onClick={handleDownload}>
-              <Download className="h-4 w-4 mr-2" />
-              Download
+            <Button variant="outline" onClick={handleShare}>
+              <Share2 className="h-4 w-4 mr-2" />
+              Share
             </Button>
 
             <Button 
