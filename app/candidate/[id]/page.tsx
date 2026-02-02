@@ -1,97 +1,106 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import React, { useEffect, useMemo, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Edit, Trash2 } from "lucide-react";
+import type { Candidate } from "@/app/page";
 
-type Candidate = {
-  id: string;
-  name: string;
-  designation: string;
-  emailId: string;
-  mobileNo: string;
-  employer: string;
-  city: string;
-  srNo: string;
-  secNo: string;
-  initialName: string;
-  fatherHusbandName: string;
-  age: string;
-  address: string;
-  persnaNo: string;
-  pfNo: string;
-  ppoNo: string;
-  dor: string;
-  pfTrustName: string;
-  epfoTrustName: string;
-  dob: string;
-  ncr: string;
-};
+const STORAGE_KEY = "candidview_candidates";
 
-const formatDate = (dateString: string) => {
-  if (!dateString) return "—";
-  
-  try {
-    const date = new Date(dateString);
-    const day = date.getDate();
-    const month = date.toLocaleString('en-US', { month: 'long' });
-    const year = date.getFullYear();
-    
-    return `${day} ${month} ${year}`;
-  } catch {
-    return dateString;
-  }
-};
+function formatReadableDate(value: string): string {
+  if (!value) return "";
+  // If already looks readable, return as is
+  if (/[a-zA-Z]/.test(value)) return value;
 
-function DetailItem({ label, value }: { label: string; value?: string }) {
-  return (
-    <div className="mb-4">
-      <p className="text-sm text-gray-500 mb-1">{label}</p>
-      <p className="text-lg font-medium">{value || "—"}</p>
-    </div>
-  );
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 }
 
-export default function CandidateDetail() {
+export default function CandidateDetailPage() {
   const router = useRouter();
-  const params = useParams();
+  const params = useParams<{ id: string }>();
+  const id = params?.id;
+
   const [candidate, setCandidate] = useState<Candidate | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const id = params.id as string;
-    const stored = localStorage.getItem("candidview_candidates");
-    
-    if (stored) {
-      try {
-        const candidates = JSON.parse(stored);
-        const found = candidates.find((c: Candidate) => c.id === id);
-        setCandidate(found || null);
-      } catch (error) {
-        console.error("Error loading candidate:", error);
-      }
-    }
-    setLoading(false);
-  }, [params.id]);
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return;
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">Loading...</p>
-      </div>
-    );
-  }
+    try {
+      const all = JSON.parse(stored) as Candidate[];
+      const found = all.find((c) => c.id === id) || null;
+      setCandidate(found);
+    } catch {
+      setCandidate(null);
+    }
+  }, [id]);
+
+  const orderedFields = useMemo((): { key: keyof Candidate; label: string; isDate?: boolean }[] => {
+    return [
+      { key: "srNo", label: "Sr No" },
+      { key: "secNo", label: "Sec No" },
+      { key: "initialName", label: "Initial Name" },
+      { key: "name", label: "Name" },
+      { key: "fatherHusbandName", label: "Father / Husband Name" },
+      { key: "age", label: "Age" },
+      { key: "address", label: "Address" },
+      { key: "city", label: "City" },
+      { key: "employer", label: "Employer" },
+      { key: "designation", label: "Designation" },
+      { key: "persnaNo", label: "Persna No" },
+      { key: "pfNo", label: "PF No" },
+      { key: "ppoNo", label: "PPO No" },
+      { key: "dor", label: "D O R", isDate: true },
+      { key: "pfTrustName", label: "PF Trust Name" },
+      { key: "epfoTrustName", label: "EPFO Trust Name" },
+      { key: "mobileNo", label: "Mob. No" },
+      { key: "emailId", label: "Mail ID" },
+      { key: "dob", label: "DOB", isDate: true },
+      { key: "ncr", label: "NCR" },
+      { key: "itgiIdNo", label: "ITGI ID No" },
+    ];
+  }, []);
+
+  const handleDelete = () => {
+    if (!candidate) return;
+    if (!window.confirm("Are you sure you want to delete this candidate?")) return;
+
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return;
+
+    try {
+      const all = JSON.parse(stored) as Candidate[];
+      const updated = all.filter((c) => c.id !== candidate.id);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      router.push("/");
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleEdit = () => {
+    // Edit happens on Home page dialog, so navigate back.
+    router.push("/");
+  };
 
   if (!candidate) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
-        <p className="text-gray-600 mb-4">Candidate not found</p>
-        <Button onClick={() => router.push("/")} variant="outline">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Home
-        </Button>
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white shadow-sm sticky top-0 z-10">
+          <div className="max-w-5xl mx-auto px-4 py-4 flex items-center gap-3">
+            <Button variant="ghost" onClick={() => router.push("/")}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+            <h1 className="text-xl font-semibold text-gray-900">Candidate Details</h1>
+          </div>
+        </header>
+
+        <main className="max-w-5xl mx-auto px-4 py-10 text-gray-600">Candidate not found.</main>
       </div>
     );
   }
@@ -99,41 +108,45 @@ export default function CandidateDetail() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Button onClick={() => router.push("/")} variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="text-2xl font-bold text-teal-500">{candidate.srNo}</h1>
+        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" onClick={() => router.push("/")}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+            <h1 className="text-xl font-semibold text-gray-900">Candidate Details</h1>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleEdit}>
+              <Edit className="h-4 w-4 mr-2" />
+              Edit
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </Button>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        <Card>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <DetailItem label="Initial Name" value={candidate.initialName} />
-              <DetailItem label="Name" value={candidate.name} />
-              <DetailItem label="Father/Husband Name" value={candidate.fatherHusbandName} />
-              <DetailItem label="Age" value={candidate.age} />
-              <DetailItem label="Date of Birth" value={formatDate(candidate.dob)} />
-              <DetailItem label="Address" value={candidate.address} />
-              <DetailItem label="City" value={candidate.city} />
-              <DetailItem label="Mobile No" value={candidate.mobileNo} />
-              <DetailItem label="Email" value={candidate.emailId} />
-              <DetailItem label="Employer" value={candidate.employer} />
-              <DetailItem label="Designation" value={candidate.designation} />
-              <DetailItem label="Sr No" value={candidate.srNo} />
-              <DetailItem label="Sec No" value={candidate.secNo} />
-              <DetailItem label="Persna No" value={candidate.persnaNo} />
-              <DetailItem label="PF No" value={candidate.pfNo} />
-              <DetailItem label="PPO No" value={candidate.ppoNo} />
-              <DetailItem label="Date of Retirement" value={formatDate(candidate.dor)} />
-              <DetailItem label="PF Trust Name" value={candidate.pfTrustName} />
-              <DetailItem label="EPFO Trust Name" value={candidate.epfoTrustName} />
-              <DetailItem label="NCR" value={candidate.ncr} />
-            </div>
-          </CardContent>
-        </Card>
+      <main className="max-w-5xl mx-auto px-4 py-8">
+        <div className="bg-white border rounded-lg p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            {orderedFields.map(({ key, label, isDate }) => {
+              const raw = candidate[key] ?? "";
+              const value = isDate ? formatReadableDate(String(raw || "")) : String(raw || "");
+              if (!value.trim()) return null;
+
+              return (
+                <div key={String(key)}>
+                  <p className="text-sm text-gray-500">{label}</p>
+                  <p className="text-lg font-semibold text-gray-900 break-words">{value}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </main>
     </div>
   );
