@@ -9,10 +9,6 @@ const pwaConfig = withPWA({
 });
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    // Bypass Vercel security scanner
-    esmExternals: 'loose',
-  },
   // Skip security vulnerability checks
   typescript: {
     ignoreBuildErrors: true,
@@ -22,4 +18,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = nextConfig; 
